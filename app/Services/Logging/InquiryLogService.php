@@ -38,6 +38,31 @@ class InquiryLogService
     }
 
     /**
+     * Record an account-to-sheba inquiry attempt (successful or failed).
+     *
+     * The account number is masked before storage — it is never persisted in full.
+     *
+     * @param  array<string, mixed>|null  $responsePayload
+     */
+    public function logAccountInquiry(
+        ?User $user,
+        string $accountNumber,
+        string $bankCode,
+        string $status,
+        ?int $httpStatus = null,
+        ?array $responsePayload = null,
+    ): InquiryLog {
+        return InquiryLog::create([
+            'user_id' => $user?->id,
+            'service_name' => 'account_to_sheba',
+            'masked_input' => $bankCode.':'.$this->maskAccountNumber($accountNumber),
+            'status' => $status,
+            'http_status' => $httpStatus,
+            'response_payload' => $responsePayload,
+        ]);
+    }
+
+    /**
      * Mask a 16-digit card number as first 6 + last 4, e.g. 603799******0000.
      *
      * Non-conforming input is fully masked so a full PAN can never leak.
@@ -51,5 +76,19 @@ class InquiryLogService
         }
 
         return substr($digits, 0, 6).str_repeat('*', 6).substr($digits, -4);
+    }
+
+    /**
+     * Mask an account number, revealing only the last 4 characters.
+     */
+    public function maskAccountNumber(string $accountNumber): string
+    {
+        $digits = preg_replace('/\D/', '', $accountNumber) ?? '';
+
+        if (strlen($digits) <= 4) {
+            return str_repeat('*', 4);
+        }
+
+        return str_repeat('*', strlen($digits) - 4).substr($digits, -4);
     }
 }

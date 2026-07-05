@@ -5,44 +5,48 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Banking;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Banking\BankCardInfoRequest;
-use App\Services\ApiIr\BankCardService;
+use App\Http\Requests\Banking\AccountToShebaRequest;
+use App\Services\ApiIr\AccountToShebaService;
 use App\Services\Logging\InquiryLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use RuntimeException;
 
-class BankCardInfoController extends Controller
+class AccountToShebaController extends Controller
 {
     public function __construct(
-        private readonly BankCardService $bankCardService,
+        private readonly AccountToShebaService $accountToShebaService,
         private readonly InquiryLogService $inquiryLog,
     ) {
     }
 
     /**
-     * Show the card info inquiry form.
+     * Show the account-to-sheba inquiry form.
      */
     public function create(): View
     {
-        return view('banking.card-info');
+        return view('banking.account-to-sheba', [
+            'banks' => (array) config('banks.list'),
+        ]);
     }
 
     /**
-     * Handle a card info inquiry.
+     * Handle an account-to-sheba inquiry.
      */
-    public function store(BankCardInfoRequest $request): RedirectResponse
+    public function store(AccountToShebaRequest $request): RedirectResponse
     {
-        $cardNumber = $request->validated('cardNumber');
+        $accountNumber = $request->validated('accountNumber');
+        $bankCode = $request->validated('bankCode');
 
         try {
-            $result = $this->bankCardService->getCardInfo($cardNumber);
+            $result = $this->accountToShebaService->convert($accountNumber, $bankCode);
         } catch (RuntimeException $e) {
             report($e);
 
-            $this->inquiryLog->logCardInquiry(
+            $this->inquiryLog->logAccountInquiry(
                 user: $request->user(),
-                cardNumber: $cardNumber,
+                accountNumber: $accountNumber,
+                bankCode: $bankCode,
                 status: 'failed',
             );
 
@@ -51,9 +55,10 @@ class BankCardInfoController extends Controller
                 ->with('error', 'در حال حاضر دریافت اطلاعات ممکن نیست. لطفاً کمی بعد دوباره تلاش کنید.');
         }
 
-        $this->inquiryLog->logCardInquiry(
+        $this->inquiryLog->logAccountInquiry(
             user: $request->user(),
-            cardNumber: $cardNumber,
+            accountNumber: $accountNumber,
+            bankCode: $bankCode,
             status: 'success',
             httpStatus: 200,
             responsePayload: $result,

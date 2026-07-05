@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-xl font-semibold leading-tight text-slate-800">
-            {{ __('استعلام اطلاعات کارت') }}
+            {{ __('تبدیل شماره کارت به شبا') }}
         </h2>
     </x-slot>
 
@@ -9,8 +9,8 @@
         <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
 
             <x-dashboard.page-header
-                title="استعلام اطلاعات کارت"
-                description="شماره کارت بانکی را وارد کنید تا نام دارنده و بانک صادرکننده آن نمایش داده شود."
+                title="تبدیل شماره کارت به شبا"
+                description="شماره کارت بانکی خود را وارد کنید تا شماره شبا و اطلاعات صاحب حساب را مشاهده کنید."
             />
 
             {{-- Failure / validation state --}}
@@ -27,7 +27,7 @@
             >
                 <form
                     method="POST"
-                    action="{{ route('banking.card-info.store') }}"
+                    action="{{ route('banking.card-to-sheba.store') }}"
                     x-data="{ loading: false }"
                     x-on:submit="loading = true"
                     class="space-y-5"
@@ -55,7 +55,7 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                             </svg>
-                            <span x-text="loading ? 'در حال استعلام…' : 'استعلام اطلاعات'">استعلام اطلاعات</span>
+                            <span x-text="loading ? 'در حال استعلام…' : 'استعلام شبا'">استعلام شبا</span>
                         </x-dashboard.submit-button>
                     </div>
                 </form>
@@ -66,9 +66,9 @@
                 @php
                     $result = session('result');
 
-                    $ownerName = data_get($result, 'data.name');
                     $sheba = data_get($result, 'data.iban');
-                    $accountNumber = data_get($result, 'data.accountNumber');
+                    $ownerName = data_get($result, 'data.name');
+                    $bank = data_get($result, 'data.bankName');
                 @endphp
 
                 <x-dashboard.card>
@@ -83,7 +83,7 @@
                             <div class="min-w-0">
                                 <div class="text-xs font-medium text-slate-500">شماره شبا</div>
                                 <div dir="ltr" class="mt-1 truncate text-left font-mono text-lg font-bold tracking-wider text-blue-800">
-                                    {{ $sheba ?: '—' }}
+                                    {{ $sheba ?? '—' }}
                                 </div>
                             </div>
                             @if ($sheba)
@@ -93,13 +93,15 @@
                     </div>
 
                     <dl class="mt-4 divide-y divide-slate-100">
-                        <x-dashboard.result-row label="نام دارنده کارت">
+                        <x-dashboard.result-row label="نام صاحب حساب">
                             {{ $ownerName ?: '—' }}
                         </x-dashboard.result-row>
 
-                        <x-dashboard.result-row label="شماره حساب" dir="ltr" mono>
-                            {{ $accountNumber ?: '—' }}
-                        </x-dashboard.result-row>
+                        @if ($bank)
+                            <x-dashboard.result-row label="نام بانک">
+                                {{ $bank }}
+                            </x-dashboard.result-row>
+                        @endif
 
                         <x-dashboard.result-row label="وضعیت استعلام">
                             <x-dashboard.status-badge type="success">موفق</x-dashboard.status-badge>
